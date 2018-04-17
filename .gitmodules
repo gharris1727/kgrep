@@ -1,0 +1,6 @@
+[submodule "kgrep/module/sregex"]
+	path = kgrep/module/sregex
+	url = git@github.com:gharris1727/sregex.git
+[submodule "ugrep/sregex"]
+	path = ugrep/sregex
+	url = https://github.com/openresty/sregex.git
