@@ -12,7 +12,7 @@ You should already have a working copy of FreeBSD built from source in /usr/src.
 You will also need a few packages:
 
 ```console
-pkg install git bison
+pkg install git bison autoconf automake rsync
 ```
 
 To begin, clone the repository somewhere convenient.
@@ -37,6 +37,15 @@ cd /usr/src/sys/modules/kgrep && make all && sudo make unload load
 ```
 
 This will then expose the `/dev/kgrep_control` device, to which we can send commands.
+
+Build kosher grep (THIS PROBABLY WONT WORK)
+
+```console
+cd kagrep/module/grep && ./bootstrap && ./configure
+cd kagrep/cli/grep && ./bootstrap && ./configure
+./bootstrap
+./configure
+```
 
 Running
 =======

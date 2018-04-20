@@ -1,0 +1,1 @@
+/usr/src/lib/libc/include/namespace.h
