@@ -18,4 +18,6 @@ MALLOC_DECLARE(SHIM_MALLOC_TYPE);
 #define MB_CUR_MAX 16
 #define EXIT_FAILURE 1
 
+char * strtok_r (char *s, const char *delim, char **save_ptr);
+
 #endif
