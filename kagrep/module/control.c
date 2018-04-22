@@ -4,9 +4,6 @@
 #include <sys/conf.h>
 #include <sys/uio.h>
 #include <sys/kernel.h>
-#include <sys/proc.h>
-#include <sys/fcntl.h>
-#include <sys/syscallsubr.h>
 
 #include "control.h"
 #include "match.h"
@@ -40,14 +37,9 @@ typedef struct kagrep {
     size_t in_buf_offset, in_buf_size;
     input_state in_state;
     char *err_str; // statically allocated.
-    int matcher;
-    bool null_bound, line_match, word_match;
+    struct grep_ctx *ctx;
     char *pattern;
-    size_t pattern_length, pattern_contents;
-    size_t n_files;
-    int *files;
-    char out_buf[BUF_SIZE];
-    size_t out_buf_offset, out_buf_size;
+    ssize_t pattern_length, pattern_contents;
 } kagrep_t;
 
 static void print_kagrep_state(char *id, struct kagrep *instance) {
@@ -55,28 +47,8 @@ static void print_kagrep_state(char *id, struct kagrep *instance) {
     uprintf("kagrep: %s\n", id);
     uprintf("in_buf: %ld, %ld\n", instance->in_buf_offset, instance->in_buf_size);
     uprintf("in_state: %d %s\n", instance->in_state, instance->err_str);
-    uprintf("matcher: %d z/%d x/%d w/%d\n", instance->matcher, instance->null_bound, instance->line_match, instance->word_match);
     uprintf("pattern: %ld, %ld\n", instance->pattern_length, instance->pattern_contents);
-    uprintf("files: %ld\n", instance->n_files);
-    uprintf("out_buf: %ld, %ld\n", instance->out_buf_offset, instance->out_buf_size);
 #endif
-}
-
-    static int 
-    __attribute__((unused)) 
-open_file(struct thread *td, char *path, int flags) 
-{
-    return kern_openat(td, AT_FDCWD, path, UIO_SYSSPACE, flags, 0644) ? EIO : td->td_retval[0];
-}
-
-    static int
-    __attribute__((unused)) 
-close_file(struct thread *td, int fd) 
-{
-    if (fd != -1 && td->td_proc->p_fd) {
-        return kern_close(td, fd);
-    }
-    return 0;
 }
 
     static int
@@ -85,6 +57,7 @@ control_open(struct cdev *dev, int oflags, int devtype, struct thread *td)
     kagrep_t *instance = malloc(sizeof(kagrep_t), CONTROL_STATE, M_WAITOK|M_ZERO);
 
     instance->td = td;
+    instance->ctx = match_create_ctx(td);
     dev->si_drv1 = instance;
     return (0);
 }
@@ -96,11 +69,6 @@ control_close(struct cdev *dev, int fflag, int devtype, struct thread *td)
     print_kagrep_state("control_close_enter", instance);
 
     free(instance->pattern, CONTROL_STATE);
-
-    for (int i = 0; i < instance->n_files; i++) {
-        close_file(instance->td, instance->files[i]);
-    }
-    free(instance->files, CONTROL_STATE);
 
     free(instance, CONTROL_STATE);
     return (0);
@@ -143,16 +111,10 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *matcher;
                     EXTRACT_STRING(matcher);
                     if (matcher) {
-                        // If the following loop doesn't find a matcher, fail.
-                        instance->in_state = ERROR;
-                        instance->err_str = "invalid matcher specified";
-
-                        for (int i = 0; i < sizeof(matchers) / sizeof(*matchers); i++) {
-                            if (!strcmp(matcher, matchers[i].name)) {
-                                instance->matcher = i;
-                                instance->in_state = FLAGS;
-                                instance->err_str = NULL;
-                            }
+                        if (match_set_matcher(instance->ctx, matcher)) {
+                            // The matcher specified is invalid, bail out.
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid matcher specified";
                         }
                     }
                 }
@@ -165,22 +127,26 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     EXTRACT_STRING(flags);
                     if (flags) {
                         instance->in_state = KEYCC;
+                        int err = false;
                         for (char *flag = flags; *flag; flag++) {
                             switch (*flag) {
                                 case 'z':
-                                    instance->null_bound = true;
+                                    err |= match_set_opt(instance->ctx, NULL_BOUND, true);
                                     break;
                                 case 'x':
-                                    instance->line_match = true;
+                                    err |= match_set_opt(instance->ctx, MATCH_LINE, true);
                                     break;
                                 case 'w':
-                                    instance->word_match = true;
+                                    err |= match_set_opt(instance->ctx, MATCH_WORD, true);
                                     break;
                                 default:
-                                    instance->in_state = ERROR;
-                                    instance->err_str = "invalid flag specified";
+                                    err = true;
                                     break;
                             }
+                        }
+                        if (err) {
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid flag specified";
                         }
                     }
                 }
@@ -195,7 +161,7 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                         // Extract the long from the buffer.
                         instance->pattern_length = strtol(count, NULL, 10);
 
-                        if (instance->pattern_length > 0) {
+                        if (instance->pattern_length >= 0) {
                             instance->pattern = malloc(instance->pattern_length, CONTROL_STATE, M_WAITOK);
                             instance->in_state = KEYS;
                         } else {
@@ -220,6 +186,11 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                         // increase the length to consume the newline without copying.
                         length += 1; 
                         instance->in_state = FILES;
+
+                        if (match_set_pattern(instance->ctx, instance->pattern, instance->pattern_length)) {
+                            instance->in_state = ERROR;
+                            instance->err_str = "unable to compile pattern";
+                        }
                     }
 
                     instance->in_buf_offset += length;
@@ -234,11 +205,9 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *filename;
                     EXTRACT_STRING(filename);
                     if (filename) {
-                        int fd = open_file(instance->td, filename, O_RDONLY);
-                        if (fd >= 0) {
-                            instance->n_files++;
-                            instance->files = realloc(instance->files, sizeof(int)*instance->n_files, CONTROL_STATE, M_WAITOK);
-                            instance->files[instance->n_files-1] = fd;
+                        if (match_input(instance->ctx, filename)) {
+                            instance->in_state = ERROR;
+                            instance->err_str = "unable to access input file";
                         }
                     }
                 }
@@ -277,6 +246,10 @@ control_read(struct cdev *dev, struct uio *uio, int ioflag)
     print_kagrep_state("control_read_enter", instance);
 
     int error = 0;
+
+    do {
+        error = match_output(instance->ctx, uio);
+    } while (uio->uio_resid > 0 && !error);
 
     print_kagrep_state("control_read_exit", instance);
     return (error);

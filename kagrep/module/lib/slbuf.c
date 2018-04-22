@@ -42,6 +42,10 @@ void slbuf_destroy(struct slbuf *slbuf) {
     free(slbuf, SLBUF_BUFFER);
 }
 
+int slbuf_full(struct slbuf *slbuf) {
+    return !slbuf->out || slbuf->out->uio_resid == 0;
+}
+
 int slbuf_write(struct slbuf *slbuf, const void *data, size_t len) {
     int rc = 0;
     ssize_t direct = slbuf->out ? MIN(slbuf->out->uio_resid, len) : 0;

@@ -13,6 +13,9 @@ struct slbuf *slbuf_create(size_t bufsize);
 // Destroy a slbuf and release all of its memory.
 void slbuf_destroy(struct slbuf *slbuf);
 
+// Test whether the slackbuf is full and future input should be deferred.
+int slbuf_full(struct slbuf *slbuf);
+
 // Write into a slbuf from a kernel buffer.
 // Prefers to write into the read buffer last used.
 // returns EFAULT for errors, 1 for overruns suggesting a read before more writes.
