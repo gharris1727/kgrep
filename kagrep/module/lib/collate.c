@@ -74,7 +74,9 @@ destruct_collate(void *t)
 {
 	struct xlocale_collate *table = t;
 	if (table->map && (table->maplen > 0)) {
+#if 0
 		(void) munmap(table->map, table->maplen);
+#endif
 	}
 	free(t);
 }
@@ -85,7 +87,8 @@ __collate_load(const char *encoding, __unused locale_t unused)
 	if (strcmp(encoding, "C") == 0 || strcmp(encoding, "POSIX") == 0) {
 		return &__xlocale_C_collate;
 	}
-	struct xlocale_collate *table = calloc(sizeof(struct xlocale_collate), 1);
+	struct xlocale_collate *table = malloc(sizeof(struct xlocale_collate));
+    memset(table, 0, sizeof(struct xlocale_collate));
 	table->header.header.destructor = destruct_collate;
 	// FIXME: Make sure that _LDP_CACHE is never returned.  We should be doing
 	// the caching outside of this section
@@ -109,6 +112,7 @@ __collate_load_tables(const char *encoding)
 int
 __collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
 {
+#if 0
 	int i, chains, z;
 	char *buf;
 	char *TMP;
@@ -116,6 +120,7 @@ __collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
 	collate_info_t *info;
 	struct stat sbuf;
 	int fd;
+#endif
 
 	table->__collate_load_error = 1;
 
@@ -124,6 +129,7 @@ __collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
 		return (_LDP_CACHE);
 	}
 
+#if 0
 	asprintf(&buf, "%s/%s/LC_COLLATE", _PathLocale, encoding);
 	if (buf == NULL)
 		return (_LDP_ERROR);
@@ -203,6 +209,9 @@ __collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
 
 	table->__collate_load_error = 0;
 	return (_LDP_LOADED);
+#else
+    return (_LDP_ERROR);
+#endif
 }
 
 static const int32_t *
@@ -429,7 +438,9 @@ _collate_wxfrm(struct xlocale_collate *table, const wchar_t *src, wchar_t *xf,
 			wchar_t *bp, *fp, c;
 			free(tr);
 			if ((tr = wcsdup(t)) == NULL) {
+#if 0
 				errno = ENOMEM;
+#endif
 				goto fail;
 			}
 			bp = tr;
@@ -448,7 +459,9 @@ _collate_wxfrm(struct xlocale_collate *table, const wchar_t *src, wchar_t *xf,
 				t += len;
 				if (pri <= 0) {
 					if (pri < 0) {
+#if 0
 						errno = EINVAL;
+#endif
 						goto fail;
 					}
 					state = NULL;
@@ -467,7 +480,9 @@ _collate_wxfrm(struct xlocale_collate *table, const wchar_t *src, wchar_t *xf,
 				t += len;
 				if (pri <= 0) {
 					if (pri < 0) {
+#if 0
 						errno = EINVAL;
+#endif
 						goto fail;
 					}
 					state = NULL;
@@ -576,7 +591,9 @@ _collate_sxfrm(struct xlocale_collate *table, const wchar_t *src, char *xf,
 			wchar_t *bp, *fp, c;
 			free(tr);
 			if ((tr = wcsdup(t)) == NULL) {
+#if 0
 				errno = ENOMEM;
+#endif
 				goto fail;
 			}
 			bp = tr;
@@ -596,7 +613,9 @@ _collate_sxfrm(struct xlocale_collate *table, const wchar_t *src, char *xf,
 				t += len;
 				if (pri <= 0) {
 					if (pri < 0) {
+#if 0
 						errno = EINVAL;
+#endif
 						goto fail;
 					}
 					state = NULL;
@@ -622,7 +641,9 @@ _collate_sxfrm(struct xlocale_collate *table, const wchar_t *src, char *xf,
 				t += len;
 				if (pri <= 0) {
 					if (pri < 0) {
+#if 0
 						errno = EINVAL;
+#endif
 						goto fail;
 					}
 					state = NULL;

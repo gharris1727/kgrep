@@ -15,6 +15,8 @@
 
 #define BUFFER_SIZE 32768
 
+#define GLOBAL_SHIM 1
+
 MALLOC_DECLARE(MATCH_MEM);
 
 struct file_req {
@@ -48,8 +50,10 @@ struct grep_ctx *match_create_ctx(struct thread *td) {
     ctx->head->next = ctx->tail;
     ctx->tail->prev = ctx->head;
 
+#if GLOBAL_SHIM
     match_icase = false;
     eolbyte = '\n';
+#endif
 
     return ctx;
 }
@@ -77,6 +81,13 @@ int match_set_matcher(struct grep_ctx *ctx, char *matcher) {
 int match_set_pattern(struct grep_ctx *ctx, char *pattern, size_t size) {
     ctx->execute = matchers[ctx->matcher].execute;
     ctx->compiled_pattern = matchers[ctx->matcher].compile(pattern, size, matchers[ctx->matcher].syntax);
+
+#if GLOBAL_SHIM
+    extern execute_fp_t execute;
+    execute = ctx->execute;
+    extern void *compiled_pattern;
+    compiled_pattern = ctx->compiled_pattern;
+#endif
     
     return !ctx->execute || !ctx->compiled_pattern;
 }
@@ -89,9 +100,11 @@ int match_set_opt(struct grep_ctx *ctx, enum option opt, int value) {
             break;
         case MATCH_LINE:
             match_lines = true;
+            return 0;
             break;
         case MATCH_WORD:
             match_words = true;
+            return 0;
             break;
     }
     return 1;
@@ -138,26 +151,15 @@ int match_output(struct grep_ctx *ctx, struct uio *uio) {
     if ((error = slbuf_read(ctx->out, uio))) {
         return error;
     }
-    if (uio->uio_resid > 0 && ctx->head->next != ctx->tail) {
+    while (uio->uio_resid > 0 && ctx->head->next != ctx->tail) {
+#if GLOBAL_SHIM
+        extern char const *filename;
+        filename = ctx->head->next->name;
+#endif
         error = grepdesc(ctx->td, ctx->out, ctx->head->next->cur_fd, false);
-        if (!error) {
-            match_rem_file(ctx, ctx->head->next);
-        }
+        match_rem_file(ctx, ctx->head->next);
     }
     return error;
 }
-
-#if 0
-static int open_file(struct thread *td, char *path, int flags) {
-    return kern_openat(td, AT_FDCWD, path, UIO_SYSSPACE, flags, 0644) ? EIO : td->td_retval[0];
-}
-
-static int close_file(struct thread *td, int fd) {
-    if (fd != -1 && td->td_proc->p_fd) {
-        return kern_close(td, fd);
-    }
-    return 0;
-}
-#endif
 
 MALLOC_DEFINE(MATCH_MEM, "matcher-mem", "Memory for the matcher state.");

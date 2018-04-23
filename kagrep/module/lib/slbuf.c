@@ -1,4 +1,6 @@
 
+#include <sys/types.h>
+#include <sys/systm.h>
 #include <sys/param.h>
 #include <sys/malloc.h>
 #include <sys/kernel.h>
@@ -77,7 +79,9 @@ int slbuf_write(struct slbuf *slbuf, const void *data, size_t len) {
 
 static int slbuf_drain(struct slbuf *slbuf) {
     struct iovec *drain_vec = slbuf->drain->uio_iov;
+    uprintf("draining:\n");
     while (slbuf->out->uio_resid > 0 && slbuf->drain_index != -1) {
+        uprintf(".");
         // Move a maximal sized block of data to the output buf.
         void *src = ((char*) drain_vec[slbuf->drain_index].iov_base) + slbuf->drain_offset;
         ssize_t amt =
@@ -109,6 +113,7 @@ static int slbuf_drain(struct slbuf *slbuf) {
             slbuf->drain->uio_resid = 0;
         }
     } 
+    uprintf("done!\n");
     return 0;
 }
 
@@ -139,7 +144,7 @@ int slbuf_read(struct slbuf *slbuf, struct uio *out) {
             // Compute the index and offset for the last buffer element.
             size_t size = total - slbuf->drain->uio_resid;
             struct iovec *drain_vec = slbuf->drain->uio_iov;
-            while (size > drain_vec[slbuf->drain_last_index].iov_len) {
+            while (slbuf->drain_last_index < slbuf->drain->uio_iovcnt && size > drain_vec[slbuf->drain_last_index].iov_len) {
                 size -= drain_vec[slbuf->drain_last_index].iov_len;
                 slbuf->drain_last_index++;
             }

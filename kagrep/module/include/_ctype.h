@@ -95,7 +95,6 @@ extern int __mb_sb_limit;
 
 #include <runetype.h>
 
-#if 0
 static __inline int
 __maskrune(__ct_rune_t _c, unsigned long _f)
 {
@@ -169,8 +168,6 @@ __wcwidth(__ct_rune_t _c)
 		return ((_x & _CTYPE_SWM) >> _CTYPE_SWS);
 	return ((_x & _CTYPE_R) != 0 ? 1 : -1);
 }
-
-#endif
 
 #else /* not using inlines */
 

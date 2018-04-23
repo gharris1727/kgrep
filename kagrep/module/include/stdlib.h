@@ -11,6 +11,7 @@ MALLOC_DECLARE(SHIM_MALLOC_TYPE);
 #define free(x) free((x), SHIM_MALLOC_TYPE)
 #define malloc(x) malloc((x), SHIM_MALLOC_TYPE, M_WAITOK)
 #define realloc(x, y) realloc((x), (y), SHIM_MALLOC_TYPE, M_WAITOK)
+#define strdup(x) strdup(x, SHIM_MALLOC_TYPE)
 
 #define exit(x) panic("MANUAL EXIT: %d\n", x)
 #define abort() panic("MANUAL ABORT")
@@ -19,5 +20,6 @@ MALLOC_DECLARE(SHIM_MALLOC_TYPE);
 #define EXIT_FAILURE 1
 
 char * strtok_r (char *s, const char *delim, char **save_ptr);
+char * getenv(const char *);
 
 #endif

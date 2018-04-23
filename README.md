@@ -47,6 +47,23 @@ cd kagrep/cli/grep && ./bootstrap && ./configure
 ./configure
 ```
 
+Additional libraries that need to be symlinked:
+
+```console
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsnlen.c lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsnlen-impl.h lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncmp.c lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncmp-impl.h lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsdup.c lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsdup-impl.h lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcslen.c lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcslen-impl.h lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncpy.c lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncpy-impl.h lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wmemcpy.c lib/
+ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wmemcpy-impl.h lib/
+```
+
 Running
 =======
 

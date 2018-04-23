@@ -29,9 +29,11 @@
  * $FreeBSD: releng/11.1/lib/libc/locale/xlocale.c 264038 2014-04-02 11:10:46Z theraven $
  */
 
+//#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <runetype.h>
+#include "libc_private.h"
 #include "xlocale_private.h"
 
 /**
@@ -98,7 +100,6 @@ struct _xlocale __xlocale_C_locale = {
 	0
 };
 
-#if 0
 static void*(*constructors[])(const char*, locale_t) =
 {
 	__collate_load,
@@ -109,10 +110,13 @@ static void*(*constructors[])(const char*, locale_t) =
 	__messages_load
 };
 
+#if 0
 static pthread_key_t locale_info_key;
+#endif
 static int fake_tls;
 static locale_t thread_local_locale;
 
+#if 0
 static void init_key(void)
 {
 
@@ -127,17 +131,24 @@ static void init_key(void)
 	__has_thread_locale = 1;
 	__detect_path_locale();
 }
+#endif
 
+#if 0
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
+#endif
 
 static locale_t
 get_thread_locale(void)
 {
 
+#if 0
 	_once(&once_control, init_key);
 	
 	return (fake_tls ? thread_local_locale :
 		pthread_getspecific(locale_info_key));
+#else
+    return thread_local_locale;
+#endif
 }
 
 #ifdef __NO_TLS
@@ -155,19 +166,27 @@ set_thread_locale(locale_t loc)
 {
 	locale_t l = (loc == LC_GLOBAL_LOCALE) ? 0 : loc;
 
+#if 0
 	_once(&once_control, init_key);
+#endif
 	
 	if (NULL != l) {
 		xlocale_retain((struct xlocale_refcounted*)l);
 	}
+#if 0
 	locale_t old = pthread_getspecific(locale_info_key);
+#else
+    locale_t old = NULL;
+#endif
 	if ((NULL != old) && (l != old)) {
 		xlocale_release((struct xlocale_refcounted*)old);
 	}
 	if (fake_tls) {
 		thread_local_locale = l;
 	} else {
+#if 0
 		pthread_setspecific(locale_info_key, l);
+#endif
 	}
 #ifndef __NO_TLS
 	__thread_locale = l;
@@ -201,7 +220,8 @@ destruct_locale(void *l)
 static locale_t
 alloc_locale(void)
 {
-	locale_t new = calloc(sizeof(struct _xlocale), 1);
+	locale_t new = malloc(sizeof(struct _xlocale));
+    memset(new, 0, sizeof(struct _xlocale));
 
 	new->header.destructor = destruct_locale;
 	new->monetary_locale_changed = 1;
@@ -253,7 +273,9 @@ locale_t newlocale(int mask, const char *locale, locale_t base)
 	int useenv = 0;
 	int success = 1;
 
+#if 0
 	_once(&once_control, init_key);
+#endif
 
 	locale_t new = alloc_locale();
 	if (NULL == new) {
@@ -304,7 +326,9 @@ locale_t duplocale(locale_t base)
 	locale_t new = alloc_locale();
 	int type;
 
+#if 0
 	_once(&once_control, init_key);
+#endif
 
 	if (NULL == new) {
 		return (NULL);
@@ -366,4 +390,3 @@ locale_t uselocale(locale_t loc)
 	return (old ? old : LC_GLOBAL_LOCALE);
 }
 
-#endif
