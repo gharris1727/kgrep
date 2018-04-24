@@ -51,3 +51,5 @@ char * getenv(const char * key) {
 int issetugid(void) {
     return 0;
 }
+
+int errno;

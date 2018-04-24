@@ -53,6 +53,7 @@ struct grep_ctx *match_create_ctx(struct thread *td) {
 #if GLOBAL_SHIM
     match_icase = false;
     eolbyte = '\n';
+    init_globals();
 #endif
 
     return ctx;
@@ -66,6 +67,10 @@ void match_destroy_ctx(struct grep_ctx *ctx) {
     free(ctx->tail, MATCH_MEM);
     slbuf_destroy(ctx->out);
     free(ctx, MATCH_MEM);
+
+#if GLOBAL_SHIM
+    clean_globals();
+#endif
 }
 
 int match_set_matcher(struct grep_ctx *ctx, char *matcher) {
