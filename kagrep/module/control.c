@@ -43,11 +43,6 @@ typedef struct kagrep {
 } kagrep_t;
 
 static void print_kagrep_state(char *id, struct kagrep *instance) {
-    uprintf("kagrep: %s\n", id);
-    uprintf("in_buf: %ld, %ld\n", instance->in_buf_offset, instance->in_buf_size);
-    uprintf("in_state: %d %s\n", instance->in_state, instance->err_str);
-    uprintf("ctx: %p\n", instance->ctx);
-    uprintf("pattern: %ld, %ld\n", instance->pattern_length, instance->pattern_contents);
 }
 
     static int
@@ -111,7 +106,6 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *matcher;
                     EXTRACT_STRING(matcher);
                     if (matcher) {
-                        uprintf("%s\n", matcher);
                         if (match_set_matcher(instance->ctx, matcher)) {
                             // The matcher specified is invalid, bail out.
                             instance->in_state = ERROR;
@@ -129,7 +123,6 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *flags;
                     EXTRACT_STRING(flags);
                     if (flags) {
-                        uprintf("%s\n", flags);
                         instance->in_state = KEYCC;
                         int err = false;
                         for (char *flag = flags; *flag; flag++) {
@@ -165,7 +158,6 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                         // Extract the long from the buffer.
                         instance->pattern_length = strtol(count, NULL, 10);
 
-                        uprintf("%ld\n", instance->pattern_length);
 
                         if (instance->pattern_length >= 0) {
                             instance->pattern = malloc(instance->pattern_length, CONTROL_STATE, M_WAITOK);
@@ -211,7 +203,6 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *filename;
                     EXTRACT_STRING(filename);
                     if (filename) {
-                        uprintf("%s\n", filename);
                         if (match_input(instance->ctx, filename)) {
                             instance->in_state = ERROR;
                             instance->err_str = "unable to access input file";
