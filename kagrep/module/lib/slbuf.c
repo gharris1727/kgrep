@@ -25,8 +25,12 @@ struct slbuf {
     size_t buf_size, data_offset, data_size;
 };
 
+static int slbuf_resize(struct slbuf *slbuf, size_t len);
+
 struct slbuf *slbuf_create(size_t bufsize) {
     struct slbuf *slbuf = malloc(sizeof(struct slbuf), SLBUF_BUFFER, M_ZERO|M_WAITOK);
+
+    slbuf_resize(slbuf, bufsize);
 
     return slbuf;
 }
@@ -101,7 +105,7 @@ int slbuf_write(struct slbuf *slbuf, const void *data, size_t len) {
         rc = slbuf_resize(slbuf, MAX(slbuf->buf_size * 2, overrun + slbuf->buf_size));
     }
     if (!rc && slbuf->out && direct > 0) {
-        rc = uiomove((void*) (intptr_t) data, direct, slbuf->out);
+        rc = uiomove((void*) (size_t) data, direct, slbuf->out);
     }
     if (!rc && slack > 0) {
         rc = slbuf_copyin(slbuf, (((const char*)data) + direct), slack);
@@ -126,7 +130,9 @@ int slbuf_read(struct slbuf *slbuf, struct uio *out) {
                 rc = uiomove(slbuf->buf + SECOND_OFF(slbuf), second, slbuf->out);
             }
             if (!rc) {
-                slbuf->data_size -= first + second;
+                slbuf->data_size -= (first + second);
+                slbuf->data_offset += (first + second);
+                slbuf->data_offset %= slbuf->buf_size;
             }
         } 
     }

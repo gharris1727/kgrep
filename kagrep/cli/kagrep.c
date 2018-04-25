@@ -40,7 +40,6 @@ int main (int argc, char **argv) {
 
     char buf[BLOCK_SIZE];
     size_t n = 0;
-    fread(buf, 1, sizeof(buf), kgrep);
     do {
         n = fread(buf, 1, sizeof(buf), kgrep);
         fwrite(buf, 1, n, out);
