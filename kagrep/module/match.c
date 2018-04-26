@@ -10,30 +10,14 @@
 #include <sys/kernel.h>
 #include <sys/malloc.h>
 
-#include "match.h"
+#include <slbuf.h>
+
 #include "grep/src/grep.h"
+#include "match.h"
 
 #define BUFFER_SIZE 32768
 
-#define GLOBAL_SHIM 1
-
 MALLOC_DECLARE(MATCH_MEM);
-
-struct file_req {
-    struct file_req *prev, *next;
-    int at_fd, cur_fd;
-    char *name;
-    size_t offset;
-};
-
-struct grep_ctx {
-    struct thread *td;
-    struct slbuf *out;
-    int matcher;
-    execute_fp_t execute;
-    void *compiled_pattern;
-    struct file_req *head, *tail;
-};
 
 static void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd, char *name);
 static void match_rem_file(struct grep_ctx *ctx, struct file_req *del);
@@ -50,11 +34,60 @@ struct grep_ctx *match_create_ctx(struct thread *td) {
     ctx->head->next = ctx->tail;
     ctx->tail->prev = ctx->head;
 
-#if GLOBAL_SHIM
-    match_icase = false;
-    eolbyte = '\n';
-    init_globals();
-#endif
+    init_globals(ctx);
+
+    /* The color strings used for matched text.
+       The user can overwrite them using the deprecated
+       environment variable GREP_COLOR or the new GREP_COLORS.  */
+    ctx->selected_match_color = "01;31";	/* bold red */
+    ctx->context_match_color  = "01;31";	/* bold red */
+
+    /* Other colors.  Defaults look damn good.  */
+    ctx->filename_color = "35";	/* magenta */
+    ctx->line_num_color = "32";	/* green */
+    ctx->byte_num_color = "32";	/* green */
+    ctx->sep_color      = "36";	/* cyan */
+    ctx->selected_line_color = "";	/* default color pair */
+    ctx->context_line_color  = "";	/* default color pair */
+
+    ctx->color_dict[0].name = "mt";
+    ctx->color_dict[0].var = &ctx->selected_match_color;
+    ctx->color_dict[0].fct = color_cap_mt_fct;
+    ctx->color_dict[1].name = "ms";
+    ctx->color_dict[1].var = &ctx->selected_match_color;
+    ctx->color_dict[1].fct = NULL;
+    ctx->color_dict[2].name = "mc";
+    ctx->color_dict[2].var = &ctx->context_match_color;
+    ctx->color_dict[2].fct = NULL;
+    ctx->color_dict[3].name = "fn";
+    ctx->color_dict[3].var = &ctx->filename_color;
+    ctx->color_dict[3].fct = NULL;
+    ctx->color_dict[4].name = "ln";
+    ctx->color_dict[4].var = &ctx->line_num_color;
+    ctx->color_dict[4].fct = NULL;
+    ctx->color_dict[5].name = "bn";
+    ctx->color_dict[5].var = &ctx->byte_num_color;
+    ctx->color_dict[5].fct = NULL;
+    ctx->color_dict[6].name = "se";
+    ctx->color_dict[6].var = &ctx->sep_color;
+    ctx->color_dict[6].fct = NULL;
+    ctx->color_dict[7].name = "sl";
+    ctx->color_dict[7].var = &ctx->selected_line_color;
+    ctx->color_dict[7].fct = NULL;
+    ctx->color_dict[8].name = "cx";
+    ctx->color_dict[8].var = &ctx->context_line_color;
+    ctx->color_dict[8].fct = NULL;
+    ctx->color_dict[9].name = "rv";
+    ctx->color_dict[9].var = NULL;
+    ctx->color_dict[9].fct = color_cap_rv_fct;
+    ctx->color_dict[10].name = "ne";
+    ctx->color_dict[10].var = NULL;
+    ctx->color_dict[10].fct = color_cap_ne_fct;
+    ctx->color_dict[11].name = NULL;
+    ctx->color_dict[11].var = NULL;
+    ctx->color_dict[11].fct = NULL;
+
+    ctx->group_separator = "--";
 
     return ctx;
 }
@@ -68,9 +101,7 @@ void match_destroy_ctx(struct grep_ctx *ctx) {
     slbuf_destroy(ctx->out);
     free(ctx, MATCH_MEM);
 
-#if GLOBAL_SHIM
-    clean_globals();
-#endif
+    clean_globals(ctx);
 }
 
 int match_set_matcher(struct grep_ctx *ctx, char *matcher) {
@@ -85,32 +116,20 @@ int match_set_matcher(struct grep_ctx *ctx, char *matcher) {
 
 int match_set_pattern(struct grep_ctx *ctx, char *pattern, size_t size) {
     ctx->execute = matchers[ctx->matcher].execute;
-    ctx->compiled_pattern = matchers[ctx->matcher].compile(pattern, size, matchers[ctx->matcher].syntax);
-
-#if GLOBAL_SHIM
-    extern execute_fp_t execute;
-    execute = ctx->execute;
-    extern void *compiled_pattern;
-    compiled_pattern = ctx->compiled_pattern;
-#endif
+    ctx->compiled_pattern = matchers[ctx->matcher].compile(ctx, pattern, size, matchers[ctx->matcher].syntax);
     
     return !ctx->execute || !ctx->compiled_pattern;
 }
 
+int match_set_colors(struct grep_ctx *ctx, const char *colors) {
+    parse_grep_colors(ctx, colors);
+    return 0;
+}
+
 int match_set_opt(struct grep_ctx *ctx, enum option opt, int value) {
-    switch (opt) {
-        case NULL_BOUND:
-            eolbyte = '\0';
-            return 0;
-            break;
-        case MATCH_LINE:
-            match_lines = true;
-            return 0;
-            break;
-        case MATCH_WORD:
-            match_words = true;
-            return 0;
-            break;
+    if (opt < LAST_OPTION) {
+        ctx->options[opt] = value;
+        return 0;
     }
     return 1;
 }
@@ -161,7 +180,7 @@ int match_output(struct grep_ctx *ctx, struct uio *uio) {
         extern char const *filename;
         filename = ctx->head->next->name;
 #endif
-        error = grepdesc(ctx->td, ctx->out, ctx->head->next->cur_fd, false);
+        error = grepdesc(ctx, ctx->head->next->cur_fd, false);
         match_rem_file(ctx, ctx->head->next);
     }
     return error;

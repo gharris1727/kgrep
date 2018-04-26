@@ -36,7 +36,24 @@ int main (int argc, char **argv) {
         return 1;
     }
 
-    fprintf(kgrep, "grep\n\n%lu\n%s\n%s\n", strlen(argv[1]), argv[1], argv[2]);
+    fprintf(kgrep, 
+            "egrep\n"           // matcher
+            "o\n"               // match only
+            "%d\n"             // limit
+            "%d\n"             // before
+            "%d\n"             // after
+            "text\n"            // binary
+            "read\n"            // device
+            "\n"                // colors
+            "%lu\n"             // pattern length
+            "%s\n"              // pattern
+            "%s\n",             // filename
+            matchlimit,         // limit
+            0,                  // before
+            0,                  // after
+            strlen(argv[1]),    // pattern length
+            argv[1],            // pattern
+            argv[2]);           // filename
 
     char buf[BLOCK_SIZE];
     size_t n = 0;

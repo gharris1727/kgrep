@@ -28,7 +28,7 @@ static struct cdevsw control_cdevsw = {
 };
 
 typedef enum {
-    MATCHER, FLAGS, KEYCC, KEYS, FILES, ERROR
+    MATCHER, FLAGS, LIMIT, BEFORE, AFTER, BINARY, DEVICE, COLORS, KEYCC, KEYS, FILES, ERROR
 } input_state;
 
 typedef struct kagrep {
@@ -123,27 +123,133 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *flags;
                     EXTRACT_STRING(flags);
                     if (flags) {
-                        instance->in_state = KEYCC;
                         int err = false;
-                        for (char *flag = flags; *flag; flag++) {
-                            switch (*flag) {
-                                case 'z':
-                                    err |= match_set_opt(instance->ctx, NULL_BOUND, true);
-                                    break;
-                                case 'x':
-                                    err |= match_set_opt(instance->ctx, MATCH_LINE, true);
-                                    break;
-                                case 'w':
-                                    err |= match_set_opt(instance->ctx, MATCH_WORD, true);
-                                    break;
-                                default:
-                                    err = true;
-                                    break;
-                            }
+                        for (char *flag = flags; *flag && !err; flag++) {
+                            err = *flag >= LAST_OPTION || match_set_opt(instance->ctx, *flag, true);
                         }
                         if (err) {
                             instance->in_state = ERROR;
                             instance->err_str = "invalid flag specified";
+                        } else {
+                            instance->in_state = KEYCC;
+                        }
+                    }
+                }
+                if (instance->in_state != LIMIT) {
+                    break;
+                }
+            case LIMIT:
+                {
+                    char *limit;
+                    EXTRACT_STRING(limit);
+                    if (limit) {
+                        // Extract the long from the buffer.
+                        if (match_set_opt(instance->ctx, MATCH_LIMIT, strtol(limit, NULL, 10))) {
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid match limit specified";
+                        } else {
+                            instance->in_state = BEFORE;
+                        }
+                    }
+                }
+                if (instance->in_state != BEFORE) {
+                    break;
+                }
+            case BEFORE:
+                {
+                    char *before;
+                    EXTRACT_STRING(before);
+                    if (before) {
+                        // Extract the long from the buffer.
+                        if (match_set_opt(instance->ctx, CONTEXT_BEFORE, strtol(before, NULL, 10))) {
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid before context specified";
+                        } else {
+                            instance->in_state = AFTER;
+                        }
+                    }
+                }
+                if (instance->in_state != AFTER) {
+                    break;
+                }
+            case AFTER:
+                {
+                    char *after;
+                    EXTRACT_STRING(after);
+                    if (after) {
+                        // Extract the long from the buffer.
+                        if (match_set_opt(instance->ctx, CONTEXT_AFTER, strtol(after, NULL, 10))) {
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid before context specified";
+                        } else {
+                            instance->in_state = BINARY;
+                        }
+                    }
+                }
+                if (instance->in_state != BINARY) {
+                    break;
+                }
+            case BINARY:
+                {
+                    char *binary;
+                    EXTRACT_STRING(binary);
+                    if (binary) {
+                        long code = BINARY_HANDLE_NONE;
+                        if (!strcmp(binary, "")) {
+                            code = BINARY_HANDLE_DEFAULT;
+                        } else if (!strcmp(binary, "text")) {
+                            code = BINARY_HANDLE_TEXT;
+                        } else if (!strcmp(binary, "binary")) {
+                            code = BINARY_HANDLE_BINARY;
+                        } else if (!strcmp(binary, "without_match")) {
+                            code = BINARY_HANDLE_NO_MATCH;
+                        } 
+                        if (code && !match_set_opt(instance->ctx, BINARY_HANDLING, code)) {
+                            instance->in_state = DEVICE;
+                        } else {
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid before context specified";
+                        }
+                    }
+                }
+                if (instance->in_state != DEVICE) {
+                    break;
+                }
+            case DEVICE:
+                {
+                    char *device;
+                    EXTRACT_STRING(device);
+                    if (device) {
+                        long code = DEVICE_HANDLE_NONE;
+                        if (!strcmp(device, "")) {
+                            code = DEVICE_HANDLE_DEFAULT;
+                        } else if (!strcmp(device, "read")) {
+                            code = DEVICE_HANDLE_READ;
+                        } else if (!strcmp(device, "skip")) {
+                            code = DEVICE_HANDLE_SKIP;
+                        } 
+                        if (code != DEVICE_HANDLE_NONE && !match_set_opt(instance->ctx, DEVICE_HANDLING, code)) {
+                            instance->in_state = DEVICE;
+                        } else {
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid before context specified";
+                        }
+                    }
+                }
+                if (instance->in_state != COLORS) {
+                    break;
+                }
+            case COLORS:
+                {
+                    char *colors;
+                    EXTRACT_STRING(colors);
+                    if (colors) {
+                        if (match_set_colors(instance->ctx, colors)) {
+                            // The matcher specified is invalid, bail out.
+                            instance->in_state = ERROR;
+                            instance->err_str = "invalid colors specified";
+                        } else {
+                            instance->in_state = KEYCC;
                         }
                     }
                 }
