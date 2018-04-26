@@ -77,9 +77,11 @@ struct grep_ctx {
     struct thread *td;
     struct slbuf *out;
     int matcher;
-    int options[LAST_OPTION];
+    long options[LAST_OPTION];
 
+    // locale globals
     struct localeinfo localeinfo;
+    uintmax_t unibyte_mask;
 
     // Color information
     const char *selected_match_color;
@@ -95,6 +97,13 @@ struct grep_ctx {
     // formatting variables
     int offset_width;
     const char *group_separator;
+    const char *filename;
+
+    // error handling
+    bool seek_failed;
+    bool seek_data_failed;
+    bool errseen;
+    bool encoding_error_output;
 
     execute_fp_t execute;
     void *compiled_pattern;
@@ -109,7 +118,7 @@ void match_destroy_ctx(struct grep_ctx *ctx);
 int match_set_matcher(struct grep_ctx *ctx, char *matcher);
 int match_set_pattern(struct grep_ctx *ctx, char *pattern, size_t size);
 int match_set_colors(struct grep_ctx *ctx, const char *colors);
-int match_set_opt(struct grep_ctx *ctx, enum option opt, int value);
+int match_set_opt(struct grep_ctx *ctx, enum option opt, long value);
 
 int match_input(struct grep_ctx *ctx, char *filename);
 int match_output(struct grep_ctx *ctx, struct uio *uio);

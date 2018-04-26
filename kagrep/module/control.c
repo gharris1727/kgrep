@@ -131,7 +131,7 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                             instance->in_state = ERROR;
                             instance->err_str = "invalid flag specified";
                         } else {
-                            instance->in_state = KEYCC;
+                            instance->in_state = LIMIT;
                         }
                     }
                 }
@@ -143,8 +143,9 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                     char *limit;
                     EXTRACT_STRING(limit);
                     if (limit) {
+                        long match_limit = strtol(limit, NULL, 10);
                         // Extract the long from the buffer.
-                        if (match_set_opt(instance->ctx, MATCH_LIMIT, strtol(limit, NULL, 10))) {
+                        if (match_set_opt(instance->ctx, MATCH_LIMIT, match_limit < 0 ? INTMAX_MAX : match_limit)) {
                             instance->in_state = ERROR;
                             instance->err_str = "invalid match limit specified";
                         } else {
@@ -229,7 +230,7 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
                             code = DEVICE_HANDLE_SKIP;
                         } 
                         if (code != DEVICE_HANDLE_NONE && !match_set_opt(instance->ctx, DEVICE_HANDLING, code)) {
-                            instance->in_state = DEVICE;
+                            instance->in_state = COLORS;
                         } else {
                             instance->in_state = ERROR;
                             instance->err_str = "invalid before context specified";
@@ -266,7 +267,7 @@ control_write(struct cdev *dev, struct uio *uio, int ioflag)
 
 
                         if (instance->pattern_length >= 0) {
-                            instance->pattern = malloc(instance->pattern_length, CONTROL_STATE, M_WAITOK);
+                            instance->pattern = malloc(instance->pattern_length + 1, CONTROL_STATE, M_ZERO|M_WAITOK);
                             instance->in_state = KEYS;
                         } else {
                             instance->pattern_length = 0;

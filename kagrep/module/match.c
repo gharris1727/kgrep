@@ -87,7 +87,7 @@ struct grep_ctx *match_create_ctx(struct thread *td) {
     ctx->color_dict[11].var = NULL;
     ctx->color_dict[11].fct = NULL;
 
-    ctx->group_separator = "--";
+    ctx->group_separator = NULL;
 
     return ctx;
 }
@@ -126,7 +126,7 @@ int match_set_colors(struct grep_ctx *ctx, const char *colors) {
     return 0;
 }
 
-int match_set_opt(struct grep_ctx *ctx, enum option opt, int value) {
+int match_set_opt(struct grep_ctx *ctx, enum option opt, long value) {
     if (opt < LAST_OPTION) {
         ctx->options[opt] = value;
         return 0;
@@ -176,10 +176,7 @@ int match_output(struct grep_ctx *ctx, struct uio *uio) {
         return error;
     }
     while (uio->uio_resid > 0 && ctx->head->next != ctx->tail) {
-#if GLOBAL_SHIM
-        extern char const *filename;
-        filename = ctx->head->next->name;
-#endif
+        ctx->filename = ctx->head->next->name;
         error = grepdesc(ctx, ctx->head->next->cur_fd, false);
         match_rem_file(ctx, ctx->head->next);
     }
