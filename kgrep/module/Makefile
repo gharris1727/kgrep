@@ -11,8 +11,3 @@ YACC=bison
 CFLAGS+=-I${.CURDIR}/sregex/src/sregex
 
 .include <bsd.kmod.mk>
-
-init: obj
-	cd grep && ./bootstrap && ./configure
-
-.PHONY: init
