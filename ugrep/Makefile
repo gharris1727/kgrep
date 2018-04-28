@@ -1,15 +1,12 @@
 
-ugrep: ugrep.o sregex
-	cc ugrep.o -o ugrep -L./sregex/ -Wl,-R./sregex/ -lsregex
+PROG=ugrep
+MK_MAN=no
 
-ugrep.o: ugrep.c
+SRCS=ugrep.c
 
-.PHONY: clean sregex
+SUBDIR=sregex
+LDADD=sregex/libsregex.a
 
-sregex:
-	cd sregex && gmake
+ugrep: sregex
 
-clean:
-	cd sregex && gmake clean
-	rm *.o ugrep
-
+.include <bsd.prog.mk>

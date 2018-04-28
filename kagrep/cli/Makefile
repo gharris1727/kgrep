@@ -1,11 +1,9 @@
 
-kagrep: kagrep.c grep
+PROG=kagrep
 
-grep:
-	cd grep && gmake
+SRCS=kagrep.c
 
-clean:
-	rm kagrep
-	cd grep && gmake clean
+MK_MAN=no
 
-.PHONY: grep clean
+.include <bsd.prog.mk>
+

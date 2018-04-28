@@ -3,7 +3,7 @@ all: test_words
 
 # Retrieve the gzipped dataset.
 enron.tar.gz :
-	curl https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz --output $@
+	curl https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz --output ${.TARGET}
 
 # Uncompress the data set but leave it in tarred format.
 enron.tar : enron.tar.gz
@@ -19,7 +19,7 @@ enron.tar : enron.tar.gz
 #   Sort these lines to collect similar lines adjacent to one another
 #   Count instances of each unique line.
 word_histogram : enron.tar
-	tr -c "[[:print:]]" "\n" < $< | tr " \n\t," "\n" |  grep -axv "" | sort | uniq -c > $@
+	tr -c "[[:print:]]" "\n" < ${.ALLSRC} | tr " \n\t," "\n" |  grep -axv "" | sort | uniq -c > ${.TARGET} || rm -f ${.TARGET}
 
 # Select representatives for each pair (length, occurances)
 # Each line in this file has four fields, representing:
@@ -33,8 +33,10 @@ word_histogram : enron.tar
 #   Permute the record to place the actual string at the beginning
 #   Count instances that share the same (length, count) parameters, selecting one arbitrarily.
 length_count_representatives : word_histogram
-	awk "{ print length(\$2), \$1, \$2 }" $< | sort -n | awk "{ print \$3, \$1, \$2 }" - | uniq -cf 2 > $@
+	awk "{ print length($$2), $$1, $$2 }" ${.ALLSRC} | sort -n | awk "{ print $$3, $$1, $$2 }" - | uniq -cf 2 > ${.TARGET} || rm -f ${.TARGET}
 
 # Sample representitives into a format that can be automated over.
 test_words : length_count_representatives
-	shuffle -f length_count_representatives -p 1000 | cut -wf 3 > $@
+	shuffle -f length_count_representatives -p 1000 | cut -wf 3 > ${.TARGET} || rm -f ${.TARGET}
+
+.include <bsd.obj.mk>

@@ -3,7 +3,7 @@
 	url = git@github.com:gharris1727/sregex.git
 [submodule "ugrep/sregex"]
 	path = ugrep/sregex
-	url = https://github.com/openresty/sregex.git
+	url = git@github.com:gharris1727/sregex.git
 [submodule "kagrep/module/grep"]
 	path = kagrep/module/grep
 	url = git@github.com:gharris1727/grep.git
