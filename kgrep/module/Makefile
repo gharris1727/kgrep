@@ -1,12 +1,12 @@
-.PATH: ${.CURDIR}/../../dev/kgrep $(.CURDIR}/../../dev/kgrep/sregex/src/sregex
+.PATH: ${.CURDIR}/sregex/src/sregex
 
-SRCS=kgrep.c sregex/src/sregex/sre_capture.c sregex/src/sregex/sre_palloc.c sregex/src/sregex/sre_regex.c sregex/src/sregex/sre_regex_compiler.c sregex/src/sregex/sre_vm_bytecode.c sregex/src/sregex/sre_vm_pike.c sregex/src/sregex/sre_vm_thompson.c sregex/src/sregex/sre_yyparser.y 
+SRCS=kgrep.c sre_capture.c sre_palloc.c sre_regex.c sre_regex_compiler.c sre_vm_bytecode.c sre_vm_pike.c sre_vm_thompson.c sre_yyparser.y
 
 KMOD=kgrep
 
 DEBUG_FLAGS=-g
 YACC=bison
 
-CFLAGS+=-I${.CURDIR}/../../dev/kgrep/sregex/src/sregex
+CFLAGS+=-I${.CURDIR}/sregex/src/sregex
 
 .include <bsd.kmod.mk>

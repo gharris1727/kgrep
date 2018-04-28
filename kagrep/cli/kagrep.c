@@ -7,27 +7,26 @@
 
 int main (int argc, char **argv) {
 
-    // argv[1] is pattern string
-    // argv[2] is the input file
-    // argv[3] is the output file
-    // argv[4] is the number of matches to find
+#define PATTERN argv[1]
+#define MATCHER argv[2]
+#define OPTIONS argv[3]
+#define INPUT   argv[4]
+#define OUTPUT  (argc > 5 ? argv[5] : "-")
+#define MATCHES (argc > 6 ? argv[6] : "-1")
 
-    if (argc != 4 && argc != 5) {
-        fprintf(stderr, "Usage: <pattern> <input-file> <output-file> [n-matches]\n");
+    if (argc != 5 && argc != 6 && argc != 7) {
+        fprintf(stderr, "Usage: <pattern> <matcher> <options> <input-file> [output-file [n-matches]]\n");
         exit(1);
     }
 
-    FILE *out = strcmp(argv[3], "-") ? fopen(argv[3], "w") : stdout;
+    FILE *out = strcmp(OUTPUT, "-") ? fopen(OUTPUT, "w") : stdout;
 
     if (!out) {
         fprintf(stderr, "Unable to open output file.\n");
         exit(2);
     }
 
-    int matchlimit = -1;
-    if (argc >= 5) {
-        matchlimit = atoi(argv[4]);
-    }
+    long matchlimit = strtol(MATCHES, NULL, 10);
 
     FILE *kgrep = fopen("/dev/kagrep_control","r+");
 
@@ -37,23 +36,25 @@ int main (int argc, char **argv) {
     }
 
     fprintf(kgrep, 
-            "egrep\n"           // matcher
-            "o\n"               // match only
-            "%d\n"             // limit
-            "%d\n"             // before
-            "%d\n"             // after
+            "%s\n"              // matcher
+            "%s\n"              // options
+            "%ld\n"             // limit
+            "%d\n"              // before
+            "%d\n"              // after
             "text\n"            // binary
             "read\n"            // device
             "\n"                // colors
             "%lu\n"             // pattern length
             "%s\n"              // pattern
             "%s\n",             // filename
+            MATCHER,            // matcher
+            OPTIONS,            // options
             matchlimit,         // limit
             0,                  // before
             0,                  // after
-            strlen(argv[1]),    // pattern length
-            argv[1],            // pattern
-            argv[2]);           // filename
+            strlen(PATTERN),    // pattern length
+            PATTERN,            // pattern
+            INPUT);           // filename
 
     char buf[BLOCK_SIZE];
     size_t n = 0;

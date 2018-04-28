@@ -22,21 +22,30 @@ git clone git@github.com:gharris1727/kgrep.git kgrep
 cd kgrep
 ```
 
-Install the kgrep kernel module
+Build and load all of the kernel modules, userspace programs, and test data.
+(in progress, doesn't work)
 
 ```console
-cd kgrep && sudo ./install.sh
+make
 ```
 
-This will install the kgrep module source into `/usr/src/sys/dev/kgrep` and the makefile into `/usr/src/sys/modules/kgrep`.
-
-To build and link the kernel module into your kernel,
+Alternatively, build everything manually.
 
 ```console
-cd /usr/src/sys/modules/kgrep && make all && sudo make unload load
+cd kgrep/module && make obj all && sudo make load
+cd kagrep/module/grep && ./bootstrap && ./configure
+cd kagrep/module && make obj all && sudo make load
 ```
 
-This will then expose the `/dev/kgrep_control` device, to which we can send commands.
+Build all of the userspace programs
+```console
+cd kgrep/cli && make
+cd kagrep
+cd kagrep/cli && make
+cd ugrep && make
+```
+
+This will then expose the `/dev/kgrep_control` and `/dev/kagrep_control' devices, to which we can send commands.
 
 Build kosher grep (THIS PROBABLY WONT WORK)
 
