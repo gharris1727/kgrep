@@ -37,4 +37,4 @@ length_count_representatives : word_histogram
 
 # Sample representitives into a format that can be automated over.
 test_words : length_count_representatives
-	shuffle -f length_count_representatives -p 100 | cut -wf 3 > $@
+	shuffle -f length_count_representatives -p 1000 | cut -wf 3 > $@
