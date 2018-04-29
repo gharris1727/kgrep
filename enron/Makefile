@@ -1,4 +1,6 @@
 
+.PATH: ${.CURDIR}
+
 all: test_words
 
 # Retrieve the gzipped dataset.
@@ -18,8 +20,8 @@ enron.tar : enron.tar.gz
 #   Drop all lines that don't have any content (e.g. adjacent unprintable characters or spaces in the original data set)
 #   Sort these lines to collect similar lines adjacent to one another
 #   Count instances of each unique line.
-word_histogram : enron.tar
-	tr -c "[[:print:]]" "\n" < ${.ALLSRC} | tr " \n\t," "\n" |  grep -axv "" | sort | uniq -c > ${.TARGET} || rm -f ${.TARGET}
+word_histogram : histogram.sh enron.tar
+	${.ALLSRC} ${.TARGET}
 
 # Select representatives for each pair (length, occurances)
 # Each line in this file has four fields, representing:
@@ -32,11 +34,16 @@ word_histogram : enron.tar
 #   Sort the list by (length, count)
 #   Permute the record to place the actual string at the beginning
 #   Count instances that share the same (length, count) parameters, selecting one arbitrarily.
-length_count_representatives : word_histogram
-	awk "{ print length($$2), $$1, $$2 }" ${.ALLSRC} | sort -n | awk "{ print $$3, $$1, $$2 }" - | uniq -cf 2 > ${.TARGET} || rm -f ${.TARGET}
+length_count_representatives : representatives.sh word_histogram
+	${.ALLSRC} ${.TARGET}
 
 # Sample representitives into a format that can be automated over.
-test_words : length_count_representatives
-	shuffle -f length_count_representatives -p 1000 | cut -wf 3 > ${.TARGET} || rm -f ${.TARGET}
+# Each line in this file is a single field:
+# 	String, the word to test.
+# Steps to reproduce:
+# 	Select 1000 candidates from previous dataset 
+# 	Select only the word column.
+test_words : sample.sh length_count_representatives
+	${.ALLSRC} ${.TARGET}
 
 .include <bsd.obj.mk>

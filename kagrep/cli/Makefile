@@ -14,9 +14,3 @@ grep:
 
 init:
 	cd ${.CURDIR}/grep && ./bootstrap && ./configure
-
-load:
-
-unload:
-
-.PHONY: load unload

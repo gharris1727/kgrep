@@ -5,7 +5,15 @@ SUBDIR=ugrep kgrep kagrep
 
 init:
 	git submodule update --init --recursive
-	make -C kagrep init
+	$(MAKE) -C ${.CURDIR}/kagrep init
+
+load:
+	$(MAKE) -C ${.CURDIR}/kgrep load
+	$(MAKE) -C ${.CURDIR}/kagrep load
+
+unload:
+	$(MAKE) -C ${.CURDIR}/kgrep unload
+	$(MAKE) -C ${.CURDIR}/kagrep unload
 
 datasets:
-	make -C enron obj objlink all
+	$(MAKE) -C ${.CURDIR}/enron obj objlink all

@@ -28,30 +28,21 @@ Prepare to build the repository by initializing dependencies and creating object
 make init obj objlink
 ```
 
-Build and load all of the kernel modules, userspace programs.
+Build and load all of the kernel modules and userspace programs.
 
 ```console
-make all load
+make 
+sudo make load
 ```
 
-This will then expose the `/dev/kgrep_control` and `/dev/kagrep_control' devices, to which we can send commands.
+This will then expose the `/dev/kgrep_control` and `/dev/kagrep_control` devices, to which we can send commands.
 
-Additional libraries that might need to be symlinked:
-(dont do this unless it doesn't build.)
+To remove everything completely, you can run each of these to remove all modules and built objects.
 
 ```console
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsnlen.c lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsnlen-impl.h lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncmp.c lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncmp-impl.h lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsdup.c lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsdup-impl.h lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcslen.c lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcslen-impl.h lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncpy.c lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wcsncpy-impl.h lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wmemcpy.c lib/
-ln -s /home/greg/kgrep/kagrep/module/grep/gnulib/lib/wmemcpy-impl.h lib/
+sudo make unload 
+make clean
+make cleandir cleandir
 ```
 
 Running
@@ -98,6 +89,8 @@ In order to operate on the prepared datasets, we have to first download and prep
 ```console
 make datasets
 ```
+
+The enron dataset can be found in `enron/obj/` along with the preprocessed files.
 
 `enron.sh` reads data from enron.tar, a single 1.7G tarball filled with emails.
 The results of the test are put in `enron.csv`

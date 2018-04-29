@@ -14,11 +14,11 @@ function run_test {
     printf "%s,%s,gnu_grep" $1 $2 >> $RES
     { time grep -aoE $1 $IN > $OUT -m $2; } 2>> $RES
     printf "%s,%s,kacc_grep" $1 $2 >> $RES
-    { time kagrep/cli/kagrep $1 egrep ao $IN $OUT $2; } 2>> $RES
+    { time kagrep/cli/obj/kagrep $1 egrep ao $IN $OUT $2; } 2>> $RES
     printf "%s,%s,user_grep" $1 $2 >> $RES
-    ( cd ugrep && time ./ugrep $1 $IN $OUT $2; ) 2>> $RES
+    { time ugrep/obj/ugrep $1 $IN $OUT $2; } 2>> $RES
     printf "%s,%s,kern_grep" $1 $2 >> $RES
-    { time kgrep/cli/kgrep $1 $IN $OUT $2; } 2>> $RES
+    { time kgrep/cli/obj/kgrep $1 $IN $OUT $2; } 2>> $RES
 }
 
 MAX_PLENGTH=3

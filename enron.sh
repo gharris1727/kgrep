@@ -1,8 +1,8 @@
 
 TIMEFORMAT="%3R,%3U,%3S"
-PAT="$(pwd)/enron/test_words"
+PAT="$(pwd)/enron/obj/test_words"
 RES=$(pwd)/enron.csv
-IN="$(pwd)/enron/enron.tar"
+IN="$(pwd)/enron/obj/enron.tar"
 OUT="/dev/null"
 
 truncate -s 0 $RES
@@ -18,7 +18,7 @@ function run_test {
     { time grep -aoFe "$1" "$IN" > "$OUT"; } 2>> $RES
     printf "."
     printf "%s,%s,kacc_grep," "$length" "$count" >> $RES
-    { time kagrep/cli/kagrep "$1" fgrep ao "$IN" "$OUT"; } 2>> $RES
+    { time kagrep/cli/obj/kagrep "$1" fgrep ao "$IN" "$OUT"; } 2>> $RES
     printf ".\n"
 }
 

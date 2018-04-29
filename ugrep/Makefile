@@ -9,10 +9,4 @@ LDADD=sregex/libsregex.a
 
 ugrep: sregex
 
-load:
-
-unload:
-
-.PHONY: load unload
-
 .include <bsd.prog.mk>
