@@ -14,6 +14,7 @@ DEBUG_FLAGS=-g
 .include <bsd.kmod.mk>
 
 init:
-	cd ${.CURDIR}/grep && ./bootstrap && ./configure --disable-nls && patch -p1 config.h < config.h.patch && gmake -k
+	cd ${.CURDIR}/grep && ./bootstrap && ./configure --disable-nls && patch -p1 config.h < config.h.patch
+	cd ${.CURDIR}/gmake -k || true
 
 .PHONY: init
