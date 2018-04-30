@@ -1,5 +1,6 @@
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include "localeinfo.h"
 
 #ifndef MATCH_H
@@ -50,6 +51,10 @@ enum device_handling {
     DEVICE_HANDLE_SKIP,
     DEVICE_HANDLE_MAX,
     DEVICE_HANDLE_DEFAULT = DEVICE_HANDLE_READ,
+};
+
+enum reenter_state {
+    NEW, PREPROCESS, RUN_MATCH, POSTPROCESS, CLOSE
 };
 
 struct uio;
@@ -108,6 +113,21 @@ struct grep_ctx {
     execute_fp_t execute;
     void *compiled_pattern;
 
+    // Reentrant implementation state.
+    enum reenter_state state;
+    intmax_t count;
+    bool ineof;
+    bool firsttime;
+    struct stat st;
+    intmax_t nlines_first_null;
+    intmax_t nlines;
+    size_t residue, save;
+    char oldc;
+    char *beg;
+    char *lim;
+    bool done_on_match_0;
+    bool out_quiet_0;
+
     // List of files to process
     struct file_req *head, *tail;
 };
@@ -119,6 +139,9 @@ int match_set_matcher(struct grep_ctx *ctx, char *matcher);
 int match_set_pattern(struct grep_ctx *ctx, char *pattern, size_t size);
 int match_set_colors(struct grep_ctx *ctx, const char *colors);
 int match_set_opt(struct grep_ctx *ctx, enum option opt, long value);
+
+void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd, char *name);
+void match_rem_file(struct grep_ctx *ctx, struct file_req *del);
 
 int match_input(struct grep_ctx *ctx, char *filename);
 int match_output(struct grep_ctx *ctx, struct uio *uio);

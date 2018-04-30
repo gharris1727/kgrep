@@ -19,9 +19,6 @@
 
 MALLOC_DECLARE(MATCH_MEM);
 
-static void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd, char *name);
-static void match_rem_file(struct grep_ctx *ctx, struct file_req *del);
-
 struct grep_ctx *match_create_ctx(struct thread *td) {
     struct grep_ctx *ctx = malloc(sizeof(struct grep_ctx), MATCH_MEM, M_WAITOK|M_ZERO);
 
@@ -134,7 +131,7 @@ int match_set_opt(struct grep_ctx *ctx, enum option opt, long value) {
     return 1;
 }
 
-static void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd, char *name) {
+void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd, char *name) {
     struct file_req *n = malloc(sizeof(struct file_req), MATCH_MEM, M_WAITOK|M_ZERO);
 
     // Fill out the fields of the struct.
@@ -149,7 +146,7 @@ static void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd
     n->next->prev = n;
 }
 
-static void match_rem_file(struct grep_ctx *ctx, struct file_req *del) {
+void match_rem_file(struct grep_ctx *ctx, struct file_req *del) {
     // Cut this element out of the list
     del->next->prev = del->prev;
     del->prev->next = del->next;
@@ -160,6 +157,9 @@ static void match_rem_file(struct grep_ctx *ctx, struct file_req *del) {
     }
     if (del->cur_fd != -1 && ctx->td->td_proc->p_fd) {
         kern_close(ctx->td, del->cur_fd);
+    }
+    if (del->at_fd != AT_FDCWD && ctx->td->td_proc->p_fd) {
+        kern_close(ctx->td, del->at_fd);
     }
     free(del, MATCH_MEM);
 }
@@ -175,10 +175,7 @@ int match_output(struct grep_ctx *ctx, struct uio *uio) {
     if ((error = slbuf_read(ctx->out, uio))) {
         return error;
     }
-    while (uio->uio_resid > 0 && ctx->head->next != ctx->tail) {
-        ctx->filename = ctx->head->next->name;
-        error = grepdesc(ctx, ctx->head->next->cur_fd, false);
-        match_rem_file(ctx, ctx->head->next);
+    while (uio->uio_resid > 0 && !grep_reenter(ctx)) {
     }
     return error;
 }
