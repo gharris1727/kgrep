@@ -19,12 +19,20 @@ int main (int argc, char **argv) {
         exit(1);
     }
 
-    FILE *out = strcmp(OUTPUT, "-") ? fopen(OUTPUT, "w") : stdout;
+    FILE *out;
 
-    if (!out) {
-        fprintf(stderr, "Unable to open output file.\n");
-        exit(2);
+    if (!strcmp(OUTPUT, "-")) {
+        out = stdout;
+    } else if (!strcmp(OUTPUT, "/dev/null")) {
+        out = NULL;
+    } else {
+        out = fopen(OUTPUT, "w");
+        if (!out) {
+            fprintf(stderr, "Unable to open output file.\n");
+            exit(2);
+        }
     }
+
 
     long matchlimit = strtol(MATCHES, NULL, 10);
 
@@ -60,7 +68,9 @@ int main (int argc, char **argv) {
     size_t n = 0;
     do {
         n = fread(buf, 1, sizeof(buf), kgrep);
-        fwrite(buf, 1, n, out);
+        if (out) {
+            fwrite(buf, 1, n, out);
+        }
     } while (n > 0);
 
     fclose(kgrep);

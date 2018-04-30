@@ -85,6 +85,7 @@ struct grep_ctx *match_create_ctx(struct thread *td) {
     ctx->color_dict[11].fct = NULL;
 
     ctx->group_separator = NULL;
+    ctx->state = NEW;
 
     return ctx;
 }
@@ -137,7 +138,8 @@ void match_add_file(struct grep_ctx *ctx, struct file_req *loc, int at_fd, char 
     // Fill out the fields of the struct.
     n->name = malloc(strlen(name) + 1, MATCH_MEM, M_WAITOK);
     strcpy(n->name, name);
-    n->cur_fd = kern_openat(ctx->td, n->at_fd, n->name, UIO_SYSSPACE, O_RDONLY, 0444) ? -1 : ctx->td->td_retval[0];
+    n->at_fd = at_fd;
+    n->cur_fd = -1;
 
     // Insert into the list after the current element.
     n->next = loc->next;
@@ -167,7 +169,7 @@ void match_rem_file(struct grep_ctx *ctx, struct file_req *del) {
 int match_input(struct grep_ctx *ctx, char *filename) {
     match_add_file(ctx, ctx->tail->prev, AT_FDCWD, filename);
 
-    return ctx->tail->prev->cur_fd == -1;
+    return 0;
 }
 
 int match_output(struct grep_ctx *ctx, struct uio *uio) {
