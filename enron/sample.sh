@@ -2,4 +2,4 @@
 
 set -o pipefail 
 
-shuffle -f "$1" -p 1000 | cut -wf 3 > "$2"
+shuffle -f "$1" -p 500 | cut -wf 3 > "$2"

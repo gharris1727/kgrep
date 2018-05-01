@@ -1,4 +1,6 @@
 
+set -f
+
 TIMEFORMAT="%3R,%3U,%3S"
 PAT="$(pwd)/enron/obj/test_words"
 RES=$(pwd)/enron.csv
