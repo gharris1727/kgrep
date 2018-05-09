@@ -29,8 +29,7 @@ function run_test {
 declare -a count
 declare -a pattern
 declare -a length
-#for s in `cat "$PAT"`; do
-for s in `printf "enron\nbanana\nsinger\n"`; do
+for s in `cat "$PAT"`; do
     count+=($(grep -cFe "$s" "$IN"))
     pattern+=("$s")
     length+=(${#s})
