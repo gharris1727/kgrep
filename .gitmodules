@@ -10,3 +10,6 @@
 [submodule "kagrep/cli/grep"]
 	path = kagrep/cli/grep
 	url = git@github.com:gharris1727/grep.git
+[submodule "gnugrep/grep"]
+	path = gnugrep/grep
+	url = git@github.com:gharris1727/grep.git

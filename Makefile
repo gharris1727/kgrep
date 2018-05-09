@@ -1,11 +1,12 @@
 
-SUBDIR=ugrep kgrep kagrep
+SUBDIR=ugrep kgrep kagrep gnugrep
 
 .include <bsd.subdir.mk>
 
 init:
 	git submodule update --init --recursive
 	$(MAKE) -C ${.CURDIR}/kagrep init
+	$(MAKE) -C ${.CURDIR}/gnugrep init
 
 load:
 	$(MAKE) -C ${.CURDIR}/kgrep load
